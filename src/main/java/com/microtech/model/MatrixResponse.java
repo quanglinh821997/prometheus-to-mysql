@@ -13,12 +13,14 @@ public class MatrixResponse {
 
     @Getter
     @ToString
-    static class MatrixData {
+    public static class MatrixData {
         String resultType;
         List<MatrixResult> result;
     }
 
-    static class MatrixResult {
+    @Getter
+    @ToString
+    public static class MatrixResult {
         Map<String, String> metric;
         List<List<Float>> values;
 

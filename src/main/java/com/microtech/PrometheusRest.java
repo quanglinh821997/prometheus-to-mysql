@@ -5,6 +5,7 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
 
+
 public interface PrometheusRest {
     @GET("api/v1/query_range")
     Call<MatrixResponse> queryRange(
@@ -14,6 +15,5 @@ public interface PrometheusRest {
             @Query("step") String step,
             @Query("timeout") String timeout
     );
-
 
 }

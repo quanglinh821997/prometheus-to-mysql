@@ -25,4 +25,6 @@ public class PrometheusApiClient {
     public MatrixResponse queryRange(String query, String start, String end, String step, String timeout) throws IOException {
         return service.queryRange(query, start, end, step, timeout).execute().body();
     }
+
+
 }
