@@ -7,7 +7,7 @@ public class JDBCConnection {
     public static Connection getConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = "jdbc:mysql://103.157.218.84:3306/prometheus?autoCommit=false&rewriteBatchedStatements=true";
+            String url = "jdbc:mysql://103.157.218.84:3306?autoCommit=false&rewriteBatchedStatements=true";
             String user = "root";
             String password = "Meocon@123";
 

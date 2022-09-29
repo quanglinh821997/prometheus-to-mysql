@@ -4,17 +4,20 @@ import com.microtech.model.DurationSeconds;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.List;
 
 public class DurationSecondsDaoImpl implements DurationSecondsDao {
 
 
+
     @Override
-    public void insertData(List<DurationSeconds> durationSecondsList) {
-            String sql = "insert into prometheus.go_gc_duration_seconds(instance,job,quantile,timestamp,value) values (?,?,?,?,?)";
-            try(Connection connection = JDBCConnection.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            connection.setAutoCommit(false);
+    public void insertData(String metric, List<DurationSeconds> durationSecondsList) {
+
+        String sql = "insert into prometheus." + metric + " (instance,job,quantile,timestamp,value) values (?,?,?,?,?)";
+        try (Connection conn = DataSource.getConnection();
+             PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+            conn.setAutoCommit(false);
 
             int count = 1;
             int batchSize = 500;
@@ -23,30 +26,31 @@ public class DurationSecondsDaoImpl implements DurationSecondsDao {
 
                 preparedStatement.setString(1, durationSeconds.getInstance());
                 preparedStatement.setString(2, durationSeconds.getJob());
-                preparedStatement.setFloat(3, durationSeconds.getQuantile());
+                preparedStatement.setFloat(3, durationSeconds.getQuantile() == null ? 0.0f : durationSeconds.getQuantile());
                 preparedStatement.setTimestamp(4, durationSeconds.getTimestamp());
                 preparedStatement.setFloat(5, durationSeconds.getValue());
                 preparedStatement.addBatch();
-                if (count % batchSize == 0 ) {
+                if (count % batchSize == 0) {
 
                     preparedStatement.executeBatch();
-                    connection.commit();
+                    conn.commit();
                     preparedStatement.clearBatch();
                 }
                 count++;
             }
 
             preparedStatement.executeBatch();
-            connection.commit();
-            connection.setAutoCommit(true);
+            conn.commit();
+            conn.setAutoCommit(true);
             System.out.println(" success !");
             long endTime = System.currentTimeMillis();
             long time = endTime - startTime;
             System.out.println(time);
         } catch (Exception e) {
-            System.out.println(" error: " + e);
+            e.printStackTrace();
         }
     }
+
 }
 
 

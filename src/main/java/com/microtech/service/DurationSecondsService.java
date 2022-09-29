@@ -14,5 +14,9 @@ import java.util.List;
 
 public interface DurationSecondsService {
 
-    void insertData(List<DurationSeconds> durationSecondsList);
+    void insertData(String metric, List<DurationSeconds> durationSecondsList) throws SQLException;
+
+
+
+
 }

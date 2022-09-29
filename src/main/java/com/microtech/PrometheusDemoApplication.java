@@ -1,52 +1,30 @@
 package com.microtech;
 
-import com.microtech.dao.DurationSecondsDao;
-import com.microtech.dao.DurationSecondsDaoImpl;
-import com.microtech.model.DurationSeconds;
-import com.microtech.model.MatrixResponse;
-import com.microtech.service.DurationSecondsServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.microtech.jobs.MyJobs;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
 
-import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class PrometheusDemoApplication {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws SchedulerException {
+		Trigger trigger = TriggerBuilder.newTrigger().withIdentity("triggerName", "prometheus")
+				.withSchedule(SimpleScheduleBuilder.simpleSchedule().withIntervalInMinutes(2).repeatForever()).build();
+		Trigger trigger2 = TriggerBuilder.newTrigger().withIdentity("triggerName2", "prometheus")
+				.withSchedule(SimpleScheduleBuilder.simpleSchedule().withIntervalInMinutes(2).repeatForever()).build();
 
-		DurationSecondsDao durationSecondsDao = null;
-
-		PrometheusApiClient client = new PrometheusApiClient("https://prometheus.micro-tech.com.vn");
-		Long now = System.currentTimeMillis() / 1000;
-		Long tenMinEarlier = now - 10 * 60;
-		MatrixResponse response = null;
-		response = client.queryRange("go_gc_duration_seconds", tenMinEarlier.toString(),
-				now.toString(), "30s", "");
-		List<DurationSeconds> durationSecondsList = parseMatrixResponse(response);
-		DurationSecondsServiceImpl durationSecondsService = new DurationSecondsServiceImpl();
-		durationSecondsService.insertData(durationSecondsList);
-
+		JobDetail goGC = JobBuilder.newJob(MyJobs.class)
+				.withIdentity("go_gc_duration_seconds", "prometheus")
+				.usingJobData("metric", "go_gc_duration_seconds")
+				.build();
+		JobDetail job = JobBuilder.newJob(MyJobs.class)
+				.withIdentity("prometheus_http_requests_total", "prometheus")
+				.usingJobData("metric", "prometheus_http_requests_total")
+				.build();
+		Scheduler scheduler = new StdSchedulerFactory().getScheduler();
+		scheduler.start();
+		scheduler.scheduleJob(goGC, trigger);
+		scheduler.scheduleJob(job, trigger2);
 	}
-
-	private static List<DurationSeconds> parseMatrixResponse(MatrixResponse response) {
-		List<DurationSeconds> result = new ArrayList<>();
-		for (MatrixResponse.MatrixResult matrixResult : response.getData().getResult()) {
-			for (List<Float> values : matrixResult.getValues()) {
-				result.add(DurationSeconds.builder()
-						.instance(matrixResult.getMetric().get("instance"))
-						.job(matrixResult.getMetric().get("job"))
-						.quantile(Float.parseFloat(matrixResult.getMetric().get("quantile")))
-						.timestamp(new Timestamp(values.get(0).longValue() * 1000))
-						.value(values.get(1))
-						.build());
-			}
-		}
-		return result;
-	}
-
 }
