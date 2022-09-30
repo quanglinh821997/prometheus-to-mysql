@@ -60,6 +60,4 @@ public class MyJobs implements Job {
         }
         return result;
     }
-
-
 }
