@@ -29,17 +29,38 @@ public class MyJobs implements Job {
             OffsetDaoImpl offsetDao = new OffsetDaoImpl();
             Long offset = offsetDao.getOffset(metric);
             Long tenMinEarlier = offset == null ? now - 5 * 60 : offset;
-            MatrixResponse response = null;
-            response = client.queryRange(metric, tenMinEarlier.toString(),
-                    now.toString(), "15s", "");
-            Long time2 = System.currentTimeMillis();
+            MatrixResponse response = client.queryRange(metric, tenMinEarlier.toString(),
+                    now.toString(), "60s", "");
+
+//            response.getData().getResult().get(0).getMetric().values().forEach(key -> {
+//                if (!metric.equals(key)) {
+//                    System.out.println(key);
+//                }
+//            });
+
+//            ArrayList<String> values = new ArrayList<>(response.getData().getResult().get(0).getMetric().values());
+//            for (int i = 1 ; i < values.size(); i++) {
+//                String value = values.get(i);
+//                System.out.println(value);
+//            }
+
+            ArrayList<List<Float>> values = new ArrayList<>(response.getData().getResult().get(0).getValues());
+            for (int i = 1 ; i < values.size(); i++) {
+                var value = values.get(i);
+                for (int j=0;j<value.size();j++){
+                    var item = value.get(j);
+                    System.out.println(j +":"+item);
+                }
+
+            }
+
+
             List<DurationSeconds> durationSecondsList = parseMatrixResponse(response);
             DurationSecondsServiceImpl durationSecondsService = new DurationSecondsServiceImpl();
-            durationSecondsService.insertData(metric, durationSecondsList);
+            durationSecondsService.createTable(metric, response.getData().getResult().get(0).getMetric().keySet(),durationSecondsList);
+            durationSecondsService.insertData(metric, response.getData().getResult().get(0).getMetric().keySet(),durationSecondsList);
             offsetDao.insert(metric, now);
-            Long time3 = System.currentTimeMillis();
-            System.out.println("t3 - t2 = " + (time3 - time2));
-            System.out.println("t2 - t1 = " + (time2 - time1));
+
         } catch (IOException | SQLException e) {
             throw new RuntimeException(e);
         }
